@@ -9,14 +9,31 @@
 
 <h1>CS2 Case Opening</h1>
 
+<div class="stats">
+    💰 Balance: $<span id="balance">100.00</span> |
+    📦 Inventory Value: $<span id="invValue">0.00</span>
+</div>
+
 <div class="case">
     <div class="items" id="items"></div>
     <div class="marker"></div>
 </div>
 
-<button id="openBtn">OPEN CASE</button>
+<button id="openBtn">OPEN CASE ($2.50)</button>
 
 <div class="result" id="result"></div>
+
+<div class="panels">
+    <div class="inventory">
+        <h2>Inventory</h2>
+        <div id="inventoryList"></div>
+    </div>
+
+    <div class="feed">
+        <h2>Live Opens</h2>
+        <div id="feed"></div>
+    </div>
+</div>
 
 <script src="script.js"></script>
 </body>

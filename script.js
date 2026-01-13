@@ -1,57 +1,122 @@
+const CASE_PRICE = 2.5;
+
+let balance = Number(localStorage.getItem("balance")) || 100;
+let inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+
 const skins = [
-    { name: "AK-47 | Blue Steel", rarity: "blue", chance: 40 },
-    { name: "M4A1-S | Night Terror", rarity: "blue", chance: 40 },
-    { name: "AWP | Neo-Noir", rarity: "purple", chance: 10 },
-    { name: "Desert Eagle | Printstream", rarity: "pink", chance: 6 },
-    { name: "Karambit | Doppler", rarity: "red", chance: 3 },
-    { name: "Butterfly Knife | Fade", rarity: "gold", chance: 1 }
+    { name: "AK-47 | Blue Steel", rarity: "blue", chance: 50, price: 1.20 },
+    { name: "M4A1-S | Night Terror", rarity: "blue", chance: 25, price: 1.10 },
+    { name: "AWP | Neo-Noir", rarity: "purple", chance: 12, price: 6.50 },
+    { name: "Desert Eagle | Printstream", rarity: "pink", chance: 7, price: 18.00 },
+    { name: "Karambit | Doppler", rarity: "red", chance: 4, price: 120.00 },
+    { name: "Butterfly Knife | Fade", rarity: "gold", chance: 2, price: 450.00 }
 ];
 
 const itemsDiv = document.getElementById("items");
 const resultDiv = document.getElementById("result");
+const balanceSpan = document.getElementById("balance");
+const invValueSpan = document.getElementById("invValue");
+const inventoryList = document.getElementById("inventoryList");
+const feed = document.getElementById("feed");
 const openBtn = document.getElementById("openBtn");
 
-openBtn.addEventListener("click", openCase);
+updateUI();
+startFakeMultiplayer();
 
-function getRandomSkin() {
-    let roll = Math.random() * 100;
-    let total = 0;
+openBtn.onclick = openCase;
 
-    for (let skin of skins) {
-        total += skin.chance;
-        if (roll <= total) return skin;
-    }
-}
+function rollSkin() {
+    const total = skins.reduce((a, b) => a + b.chance, 0);
+    let roll = Math.random() * total;
 
-function generateRoll() {
-    itemsDiv.innerHTML = "";
-    for (let i = 0; i < 40; i++) {
-        const skin = getRandomSkin();
-        const div = document.createElement("div");
-        div.className = `item ${skin.rarity}`;
-        div.textContent = skin.name;
-        itemsDiv.appendChild(div);
+    for (const skin of skins) {
+        if (roll < skin.chance) return skin;
+        roll -= skin.chance;
     }
 }
 
 function openCase() {
-    openBtn.disabled = true;
-    resultDiv.textContent = "";
-    generateRoll();
+    if (balance < CASE_PRICE) {
+        alert("Not enough balance!");
+        return;
+    }
 
-    const winningIndex = 30;
-    const winningSkin = itemsDiv.children[winningIndex].textContent;
+    balance -= CASE_PRICE;
+    updateUI();
+
+    itemsDiv.innerHTML = "";
+    resultDiv.textContent = "";
+    openBtn.disabled = true;
+
+    const winIndex = 32;
+    const winningSkin = rollSkin();
+
+    for (let i = 0; i < 40; i++) {
+        const skin = i === winIndex ? winningSkin : rollSkin();
+        const div = document.createElement("div");
+        div.className = `item ${skin.rarity}`;
+        div.style.backgroundImage = "url('assets/placeholder.png')";
+        div.innerHTML = `<span>${skin.name}</span>`;
+        itemsDiv.appendChild(div);
+    }
 
     itemsDiv.style.transition = "none";
     itemsDiv.style.left = "0px";
 
-    setTimeout(() => {
-        itemsDiv.style.transition = "left 4s cubic-bezier(0.1, 0.9, 0.2, 1)";
-        itemsDiv.style.left = `-${winningIndex * 140 - 350}px`;
-    }, 50);
+    requestAnimationFrame(() => {
+        itemsDiv.style.transition = "left 4.5s cubic-bezier(0.08,0.82,0.17,1)";
+        itemsDiv.style.left = `-${winIndex * 150 - 375}px`;
+    });
 
     setTimeout(() => {
-        resultDiv.textContent = `🎉 You won: ${winningSkin}`;
+        inventory.push(winningSkin);
+        saveData();
+
+        resultDiv.textContent = `🎉 You unboxed ${winningSkin.name} ($${winningSkin.price})`;
+        addFeedEntry("You", winningSkin);
+
         openBtn.disabled = false;
-    }, 4200);
+        updateUI();
+    }, 4700);
+}
+
+function updateUI() {
+    balanceSpan.textContent = balance.toFixed(2);
+    inventoryList.innerHTML = "";
+
+    let totalValue = 0;
+    inventory.forEach(item => {
+        totalValue += item.price;
+        const div = document.createElement("div");
+        div.textContent = `${item.name} - $${item.price}`;
+        inventoryList.appendChild(div);
+    });
+
+    invValueSpan.textContent = totalValue.toFixed(2);
+    localStorage.setItem("balance", balance);
+}
+
+function saveData() {
+    localStorage.setItem("inventory", JSON.stringify(inventory));
+}
+
+function startFakeMultiplayer() {
+    const names = ["Alex", "SteamUser", "xXProXx", "CSKing", "LuckyGuy"];
+
+    setInterval(() => {
+        const name = names[Math.floor(Math.random() * names.length)];
+        const skin = rollSkin();
+        addFeedEntry(name, skin);
+    }, 2500);
+}
+
+function addFeedEntry(name, skin) {
+    const div = document.createElement("div");
+    div.className = skin.rarity;
+    div.textContent = `${name} unboxed ${skin.name}`;
+    feed.prepend(div);
+
+    if (feed.children.length > 20) {
+        feed.removeChild(feed.lastChild);
+    }
 }
